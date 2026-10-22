@@ -1,11 +1,12 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('path');
 const connectDB = require('./config/db');
 const { ensureAdminExists } = require('./controllers/authController');
 
-// Load environment variables
-dotenv.config();
+// Load environment variables from server/.env (works regardless of where node is run from)
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 // Connect to MongoDB
 connectDB().then(() => {
