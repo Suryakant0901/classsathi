@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ClassSathi</string>
+    <string name="title_activity_main">ClassSathi</string>
+    <string name="package_name">com.classsathi.app</string>
+    <string name="custom_url_scheme">com.classsathi.app</string>
+</resources>
