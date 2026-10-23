@@ -1,0 +1,25 @@
+{
+  "short_name": "ClassSathi",
+  "name": "ClassSathi — School Attendance System",
+  "description": "Class 9 & 10 Attendance Register & Student Management System",
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0f172a",
+  "theme_color": "#4f46e5",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "scope": "/"
+}

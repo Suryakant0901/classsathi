@@ -5,8 +5,14 @@ const path = require('path');
 const connectDB = require('./config/db');
 const { ensureAdminExists } = require('./controllers/authController');
 
-// Load environment variables from server/.env (works regardless of where node is run from)
+// Load environment variables from server/.env
 dotenv.config({ path: path.join(__dirname, '.env') });
+
+// Safe fallbacks for production/serverless hosting
+process.env.JWT_SECRET =
+  process.env.JWT_SECRET || 'classsathi_super_secret_jwt_key_2026_father_attendance';
+process.env.ADMIN_DEFAULT_EMAIL = process.env.ADMIN_DEFAULT_EMAIL || 'admin@classsathi.com';
+process.env.ADMIN_DEFAULT_PASSWORD = process.env.ADMIN_DEFAULT_PASSWORD || 'admin123';
 
 // Connect to MongoDB
 connectDB().then(() => {
@@ -57,7 +63,11 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`🚀 ClassSathi Server running on port ${PORT}`);
-  console.log(`🔗 Health check available at http://localhost:${PORT}/api/health`);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`🚀 ClassSathi Server running on port ${PORT}`);
+    console.log(`🔗 Health check available at http://localhost:${PORT}/api/health`);
+  });
+}
+
+module.exports = app;
