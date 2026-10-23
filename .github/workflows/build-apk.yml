@@ -33,6 +33,13 @@ jobs:
           cp -r dist/* android/app/src/main/assets/public/
           cp capacitor.config.json android/app/src/main/assets/capacitor.config.json
 
+      - name: Setup Android SDK Platform 36 & Accept Licenses
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-36" "build-tools;36.0.0" || true
+
       - name: Make Gradle Executable
         run: chmod +x client/android/gradlew
 
@@ -41,7 +48,14 @@ jobs:
           ANDROID_HOME: /usr/local/lib/android/sdk
         run: |
           cd client/android
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          if ! ./gradlew assembleDebug --no-daemon --stacktrace > build_log.txt 2>&1; then
+            echo "### ❌ Gradle Build Error Details" >> $GITHUB_STEP_SUMMARY
+            echo '```text' >> $GITHUB_STEP_SUMMARY
+            tail -n 120 build_log.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat build_log.txt
+            exit 1
+          fi
 
       - name: Upload APK to Artifacts
         uses: actions/upload-artifact@v4
