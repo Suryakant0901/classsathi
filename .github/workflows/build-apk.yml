@@ -5,6 +5,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -57,9 +60,22 @@ jobs:
             exit 1
           fi
 
+      - name: Prepare APK Asset
+        run: cp client/android/app/build/outputs/apk/debug/app-debug.apk ClassSathi-v1.0.apk
+
       - name: Upload APK to Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ClassSathi-Attendance-APK
-          path: client/android/app/build/outputs/apk/debug/app-debug.apk
+          path: ClassSathi-v1.0.apk
           retention-days: 14
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0
+          name: "ClassSathi v1.0.0 APK"
+          body: "ClassSathi Android APK with bundled local assets, clean login placeholders (no demo credentials), and MongoDB Atlas cloud backend connectivity."
+          files: ClassSathi-v1.0.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
