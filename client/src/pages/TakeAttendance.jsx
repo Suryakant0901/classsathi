@@ -17,7 +17,9 @@ import {
   Edit3,
   UserX,
   History,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 
 const TakeAttendance = ({ setActivePage }) => {
@@ -35,6 +37,8 @@ const TakeAttendance = ({ setActivePage }) => {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [message, setMessage] = useState(null); // { type: 'success' | 'error', text: '' }
 
   // Fetch students & attendance for selected class and date
@@ -194,6 +198,45 @@ const TakeAttendance = ({ setActivePage }) => {
     }
   };
 
+  // Delete Attendance Record from MongoDB
+  const handleDeleteAttendance = async () => {
+    if (!existingDocId) {
+      setMessage({ type: 'error', text: 'No existing attendance record found to delete.' });
+      return;
+    }
+
+    try {
+      setDeleting(true);
+      setMessage(null);
+      const res = await attendanceAPI.delete(existingDocId);
+
+      if (res.success) {
+        setIsAlreadyRecorded(false);
+        setExistingDocId(null);
+        setAuditReason('');
+        setShowDeleteModal(false);
+
+        // Reset loaded student records to default 'Present'
+        setAttendanceRecords((prev) =>
+          prev.map((rec) => ({
+            ...rec,
+            status: 'Present',
+            remarks: ''
+          }))
+        );
+
+        setMessage({
+          type: 'success',
+          text: `Attendance record for Class ${selectedClass} on ${selectedDate} has been permanently deleted.`
+        });
+      }
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message || 'Failed to delete attendance record' });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   // Quick export
   const handleExportPDF = () => {
     const dataForExport = {
@@ -314,14 +357,24 @@ const TakeAttendance = ({ setActivePage }) => {
                 </p>
               </div>
             </div>
-            <div className="w-full sm:w-auto">
+            <div className="w-full sm:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <input
                 type="text"
                 placeholder="Reason for correction (optional)..."
                 value={auditReason}
                 onChange={(e) => setAuditReason(e.target.value)}
-                className="w-full sm:w-64 px-3 py-1.5 bg-white border border-amber-300 rounded-lg text-xs placeholder-amber-400 focus:outline-hidden focus:ring-2 focus:ring-amber-500"
+                className="w-full sm:w-56 px-3 py-1.5 bg-white border border-amber-300 rounded-lg text-xs placeholder-amber-400 focus:outline-hidden focus:ring-2 focus:ring-amber-500"
               />
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(true)}
+                disabled={deleting}
+                className="inline-flex items-center justify-center space-x-1.5 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer whitespace-nowrap"
+                title="Permanently delete this attendance record from MongoDB"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete Record</span>
+              </button>
             </div>
           </div>
         )}
@@ -544,15 +597,73 @@ const TakeAttendance = ({ setActivePage }) => {
             <div className="text-xs text-slate-500">
               Total {attendanceRecords.length} student records for Class {selectedClass} ready to save permanently.
             </div>
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={saving}
-              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/30 transition-all cursor-pointer"
-            >
-              <Save className="w-4 h-4" />
-              <span>{saving ? 'Saving...' : isAlreadyRecorded ? 'Update Attendance Record' : 'Save Attendance'}</span>
-            </button>
+            <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+              {isAlreadyRecorded && (
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteModal(true)}
+                  disabled={saving || deleting}
+                  className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 px-4 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-all cursor-pointer"
+                >
+                  <Trash2 className="w-4 h-4 text-rose-600" />
+                  <span>Delete Attendance</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving || deleting}
+                className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/30 transition-all cursor-pointer"
+              >
+                <Save className="w-4 h-4" />
+                <span>{saving ? 'Saving...' : isAlreadyRecorded ? 'Update Attendance Record' : 'Save Attendance'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+            <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-4">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 text-center">Delete Attendance Record?</h3>
+            <p className="text-xs text-slate-500 text-center mt-2 leading-relaxed">
+              Are you sure you want to permanently delete the attendance record for <span className="font-bold text-slate-800">Class {selectedClass}</span> on <span className="font-bold text-slate-800">{selectedDate}</span>?
+              This will remove attendance for {attendanceRecords.length} students from MongoDB.
+            </p>
+
+            <div className="mt-6 flex items-center justify-end space-x-3">
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deleting}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteAttendance}
+                disabled={deleting}
+                className="px-5 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-md shadow-rose-600/30 transition-all cursor-pointer inline-flex items-center space-x-1.5"
+              >
+                {deleting ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Yes, Delete Record</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

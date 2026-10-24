@@ -73,9 +73,9 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.0
-          name: "ClassSathi v1.0.0 APK"
-          body: "ClassSathi Android APK with bundled local assets, clean login placeholders (no demo credentials), and MongoDB Atlas cloud backend connectivity."
+          tag_name: v1.0.1
+          name: "ClassSathi v1.0.1 APK (Server Connection & Attendance Delete)"
+          body: "ClassSathi Android APK v1.0.1 with dynamic Server Connection switcher (fixes mobile 'Failed to fetch' error) and Admin Attendance Delete functionality."
           files: ClassSathi-v1.0.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

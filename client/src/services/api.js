@@ -1,23 +1,86 @@
-// Determine backend API URL:
-// 1. If VITE_API_URL is explicitly set, use it.
-// 2. If running inside native mobile app (Capacitor / Android WebView / file: / localhost without port),
-//    use the deployed cloud backend URL: 'https://classsathi-eight.vercel.app/api'.
-// 3. Otherwise (local browser development with Vite dev server), use relative '/api' proxy.
-const isNativeApp =
-  typeof window !== 'undefined' &&
-  (window.Capacitor?.isNativePlatform?.() ||
-    window.location.protocol === 'capacitor:' ||
-    window.location.protocol === 'file:' ||
-    (window.location.hostname === 'localhost' && window.location.port === '') ||
-    (window.location.hostname === '127.0.0.1' && window.location.port === ''));
+export const DEFAULT_LOCAL_API_URL = 'http://192.168.30.247:5000/api';
+export const DEFAULT_CLOUD_API_URL = 'https://classsathi-eight.vercel.app/api';
 
-const CLOUD_API_URL = 'https://classsathi-eight.vercel.app/api';
+export const isNativePlatform = () => {
+  return (
+    typeof window !== 'undefined' &&
+    Boolean(
+      window.Capacitor?.isNativePlatform?.() ||
+      window.location.protocol === 'capacitor:' ||
+      window.location.protocol === 'file:' ||
+      (window.location.hostname === 'localhost' && window.location.port === '') ||
+      (window.location.hostname === '127.0.0.1' && window.location.port === '')
+    )
+  );
+};
 
-const API_BASE = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL}/api`
-  : isNativeApp
-    ? CLOUD_API_URL
-    : '/api';
+export const isNativeApp = isNativePlatform();
+
+export const getApiBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('classsathi_api_url');
+    if (saved && saved.trim()) {
+      return saved.trim().replace(/\/+$/, '');
+    }
+  }
+
+  if (import.meta.env.VITE_API_URL) {
+    return `${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api`;
+  }
+
+  if (isNativePlatform()) {
+    // Default mobile app to the local Wi-Fi PC server running backend
+    return DEFAULT_LOCAL_API_URL;
+  }
+
+  // Web browser development proxy
+  return '/api';
+};
+
+export const setApiBaseUrl = (url) => {
+  if (!url || !url.trim()) {
+    localStorage.removeItem('classsathi_api_url');
+  } else {
+    let cleanUrl = url.trim().replace(/\/+$/, '');
+    if (!cleanUrl.endsWith('/api')) {
+      cleanUrl = `${cleanUrl}/api`;
+    }
+    localStorage.setItem('classsathi_api_url', cleanUrl);
+  }
+};
+
+export const testApiConnection = async (customUrl) => {
+  const targetBase = (customUrl || getApiBaseUrl()).trim().replace(/\/+$/, '');
+  const testUrl = targetBase.endsWith('/api')
+    ? `${targetBase}/health`
+    : `${targetBase}/api/health`;
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+    const res = await fetch(testUrl, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+      return { success: true, status: res.status, data };
+    }
+    return { success: false, status: res.status, error: `HTTP ${res.status}` };
+  } catch (err) {
+    return {
+      success: false,
+      error:
+        err.name === 'AbortError'
+          ? 'Connection timed out (4s). Ensure server is running and device is on same network.'
+          : err.message || 'Server unreachable'
+    };
+  }
+};
 
 // Helper for making API calls with token
 async function request(endpoint, options = {}) {
@@ -33,8 +96,10 @@ async function request(endpoint, options = {}) {
     headers
   };
 
+  const baseUrl = getApiBaseUrl();
+
   try {
-    const response = await fetch(`${API_BASE}${endpoint}`, config);
+    const response = await fetch(`${baseUrl}${endpoint}`, config);
     const contentType = response.headers.get('content-type') || '';
     let data;
 
@@ -48,7 +113,7 @@ async function request(endpoint, options = {}) {
         data = {
           message:
             text.includes('<html') || text.includes('NOT_FOUND')
-              ? `Backend service temporarily unavailable (${response.status}). Please check network/server.`
+              ? `Backend service temporarily unavailable (${response.status}). Please check network/server settings.`
               : text || `Server error (${response.status})`
         };
       }
@@ -67,6 +132,17 @@ async function request(endpoint, options = {}) {
     return data;
   } catch (error) {
     console.error(`API Error on [${options.method || 'GET'} ${endpoint}]:`, error);
+    if (
+      error.name === 'TypeError' &&
+      (error.message.includes('fetch') ||
+        error.message.includes('Failed to fetch') ||
+        error.message.includes('NetworkError') ||
+        error.message.includes('Network request failed'))
+    ) {
+      throw new Error(
+        `Failed to reach backend server (${baseUrl}). Please ensure your PC server is running and phone is on the same Wi-Fi / hotspot, or configure the Server Connection in settings below.`
+      );
+    }
     throw error;
   }
 }

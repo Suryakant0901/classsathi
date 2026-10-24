@@ -24,7 +24,9 @@ import {
   Eye,
   Edit2,
   ChevronRight,
-  TrendingUp
+  TrendingUp,
+  Trash2,
+  RefreshCw
 } from 'lucide-react';
 
 const AttendanceRegister = ({ setActivePage }) => {
@@ -45,6 +47,9 @@ const AttendanceRegister = ({ setActivePage }) => {
   // Daily State
   const [selectedDailyDate, setSelectedDailyDate] = useState(() => currentDate.toISOString().split('T')[0]);
   const [dailyData, setDailyData] = useState(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deletingAttendance, setDeletingAttendance] = useState(false);
+  const [successBanner, setSuccessBanner] = useState('');
 
   // Student Drilldown State
   const [allStudents, setAllStudents] = useState([]);
@@ -92,6 +97,26 @@ const AttendanceRegister = ({ setActivePage }) => {
       setError(err.message || 'Failed to load daily attendance sheet');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Delete Daily Attendance Record
+  const handleDeleteDailyAttendance = async () => {
+    if (!dailyData || !dailyData._id) return;
+    try {
+      setDeletingAttendance(true);
+      setError('');
+      const res = await attendanceAPI.delete(dailyData._id);
+      if (res.success) {
+        setDeleteConfirmOpen(false);
+        setSuccessBanner(`Attendance record for Class ${selectedClass} on ${selectedDailyDate} was deleted successfully.`);
+        setTimeout(() => setSuccessBanner(''), 5000);
+        await loadDailyData();
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to delete attendance record');
+    } finally {
+      setDeletingAttendance(false);
     }
   };
 
@@ -492,6 +517,13 @@ const AttendanceRegister = ({ setActivePage }) => {
       {/* VIEW MODE 2: DAILY REGISTER SHEET */}
       {viewMode === 'daily' && (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+          {successBanner && (
+            <div className="p-3 bg-emerald-50 border-b border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center space-x-2">
+              <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>{successBanner}</span>
+            </div>
+          )}
+
           <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 className="text-sm font-bold text-slate-900">
@@ -523,6 +555,15 @@ const AttendanceRegister = ({ setActivePage }) => {
                 >
                   <Edit2 className="w-3.5 h-3.5" />
                   <span>Edit Sheet</span>
+                </button>
+                <button
+                  onClick={() => setDeleteConfirmOpen(true)}
+                  disabled={deletingAttendance}
+                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold text-xs border border-rose-200 transition-all cursor-pointer"
+                  title="Permanently delete this day's attendance sheet from MongoDB"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                  <span>Delete Sheet</span>
                 </button>
               </div>
             )}
@@ -748,6 +789,51 @@ const AttendanceRegister = ({ setActivePage }) => {
                 className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmOpen && dailyData && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+            <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-4">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 text-center">Delete Daily Attendance Sheet?</h3>
+            <p className="text-xs text-slate-500 text-center mt-2 leading-relaxed">
+              Are you sure you want to permanently delete the attendance record for <span className="font-bold text-slate-800">Class {selectedClass}</span> on <span className="font-bold text-slate-800">{selectedDailyDate}</span>?
+              This will remove attendance for {dailyData.records?.length || 0} students from MongoDB.
+            </p>
+
+            <div className="mt-6 flex items-center justify-end space-x-3">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmOpen(false)}
+                disabled={deletingAttendance}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteDailyAttendance}
+                disabled={deletingAttendance}
+                className="px-5 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-md shadow-rose-600/30 transition-all cursor-pointer inline-flex items-center space-x-1.5"
+              >
+                {deletingAttendance ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Yes, Delete Sheet</span>
+                  </>
+                )}
               </button>
             </div>
           </div>

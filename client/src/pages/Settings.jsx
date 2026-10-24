@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { authAPI } from '../services/api';
+import {
+  authAPI,
+  getApiBaseUrl,
+  setApiBaseUrl,
+  testApiConnection,
+  DEFAULT_LOCAL_API_URL,
+  DEFAULT_CLOUD_API_URL
+} from '../services/api';
 import {
   Settings as SettingsIcon,
   User,
@@ -10,11 +17,21 @@ import {
   AlertCircle,
   Database,
   Save,
-  ShieldCheck
+  ShieldCheck,
+  Wifi,
+  Globe,
+  RefreshCw,
+  XCircle
 } from 'lucide-react';
 
 const Settings = () => {
   const { user, updateUser } = useAuth();
+
+  // Server Settings State
+  const [serverUrl, setServerUrlState] = useState(() => getApiBaseUrl());
+  const [serverTesting, setServerTesting] = useState(false);
+  const [serverStatus, setServerStatus] = useState(null);
+  const [serverSuccessMsg, setServerSuccessMsg] = useState('');
 
   // Profile Form
   const [profileData, setProfileData] = useState({
@@ -279,6 +296,140 @@ const Settings = () => {
             </form>
           </div>
         </div>
+      </div>
+
+      {/* Backend Server Connection Settings Card */}
+      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-xs text-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-2">
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <Wifi className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">Backend Server Connection</h3>
+              <p className="text-[11px] text-slate-500">Configure host API endpoint for mobile APK & browser</p>
+            </div>
+          </div>
+
+          <span className="font-mono text-[11px] bg-slate-100 px-2.5 py-1 rounded-lg text-slate-700 font-bold self-start sm:self-auto">
+            Active: {getApiBaseUrl()}
+          </span>
+        </div>
+
+        {serverSuccessMsg && (
+          <div className="mt-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center space-x-2">
+            <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{serverSuccessMsg}</span>
+          </div>
+        )}
+
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={async () => {
+              setServerUrlState(DEFAULT_LOCAL_API_URL);
+              setServerTesting(true);
+              const res = await testApiConnection(DEFAULT_LOCAL_API_URL);
+              setServerTesting(false);
+              setServerStatus(res);
+            }}
+            className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-start space-x-3 ${
+              serverUrl === DEFAULT_LOCAL_API_URL
+                ? 'border-indigo-500 bg-indigo-50/50'
+                : 'border-slate-200 hover:bg-slate-50'
+            }`}
+          >
+            <Wifi className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+            <div>
+              <div className="font-bold text-slate-800">Local Wi-Fi PC Server</div>
+              <div className="text-[11px] font-mono text-slate-500">{DEFAULT_LOCAL_API_URL}</div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={async () => {
+              setServerUrlState(DEFAULT_CLOUD_API_URL);
+              setServerTesting(true);
+              const res = await testApiConnection(DEFAULT_CLOUD_API_URL);
+              setServerTesting(false);
+              setServerStatus(res);
+            }}
+            className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-start space-x-3 ${
+              serverUrl === DEFAULT_CLOUD_API_URL
+                ? 'border-indigo-500 bg-indigo-50/50'
+                : 'border-slate-200 hover:bg-slate-50'
+            }`}
+          >
+            <Globe className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+            <div>
+              <div className="font-bold text-slate-800">Cloud Server</div>
+              <div className="text-[11px] font-mono text-slate-500">{DEFAULT_CLOUD_API_URL}</div>
+            </div>
+          </button>
+        </div>
+
+        <div className="mt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <input
+            type="text"
+            value={serverUrl}
+            onChange={(e) => {
+              setServerUrlState(e.target.value);
+              setServerStatus(null);
+            }}
+            placeholder="http://192.168.30.247:5000/api"
+            className="flex-1 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-mono text-xs text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+          />
+
+          <button
+            type="button"
+            onClick={async () => {
+              setServerTesting(true);
+              setServerStatus(null);
+              const res = await testApiConnection(serverUrl);
+              setServerTesting(false);
+              setServerStatus(res);
+            }}
+            disabled={serverTesting}
+            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all cursor-pointer inline-flex items-center justify-center space-x-1"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${serverTesting ? 'animate-spin text-indigo-600' : ''}`} />
+            <span>{serverTesting ? 'Testing...' : 'Test Ping'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setApiBaseUrl(serverUrl);
+              setServerSuccessMsg('Server URL saved! Application is now routed to ' + getApiBaseUrl());
+              setTimeout(() => setServerSuccessMsg(''), 4000);
+            }}
+            className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
+          >
+            Save URL
+          </button>
+        </div>
+
+        {serverStatus && (
+          <div
+            className={`mt-3 p-2.5 rounded-xl flex items-center space-x-2 border ${
+              serverStatus.success
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                : 'bg-rose-50 border-rose-200 text-rose-800'
+            }`}
+          >
+            {serverStatus.success ? (
+              <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+            ) : (
+              <XCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            )}
+            <span>
+              {serverStatus.success
+                ? 'Ping successful! Server is online and responding.'
+                : `Ping failed: ${serverStatus.error || 'Server unreachable'}`}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Database & Architecture Card */}
