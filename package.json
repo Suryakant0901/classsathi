@@ -5,7 +5,7 @@
   "main": "server/server.js",
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "build": "npm run build --prefix client",
+    "build": "cd client && npm install && npm run build",
     "install:client": "npm install --prefix client",
     "server": "cd server && node server.js",
     "client": "cd client && npm run dev",
