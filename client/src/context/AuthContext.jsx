@@ -26,8 +26,18 @@ export const AuthProvider = ({ children }) => {
             setUser(res.data);
             localStorage.setItem('classsathi_user', JSON.stringify(res.data));
           }
-        } catch {
-          logout();
+        } catch (err) {
+          // If offline / server unreachable, keep existing user session active!
+          const saved = localStorage.getItem('classsathi_user');
+          if (saved) {
+            try {
+              setUser(JSON.parse(saved));
+            } catch {
+              logout();
+            }
+          } else {
+            logout();
+          }
         }
       }
       setLoading(false);

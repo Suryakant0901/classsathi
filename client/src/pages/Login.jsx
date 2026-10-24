@@ -203,25 +203,21 @@ const Login = () => {
             </button>
           </form>
 
-          {/* Server Connection Indicator & Configuration Toggle */}
+          {/* Autonomous School / Standalone Status Indicator */}
           <div className="mt-6 pt-5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <div className="flex items-center space-x-1.5 truncate max-w-[240px]">
-              {isLocalServer ? (
-                <Wifi className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-              ) : (
-                <Globe className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-              )}
-              <span className="truncate text-[11px]" title={currentServerUrl}>
-                {isLocalServer ? 'Wi-Fi Server' : 'Cloud Server'}: {currentServerUrl.replace(/^https?:\/\//, '')}
+            <div className="flex items-center space-x-1.5 truncate max-w-[260px]">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+              <span className="text-[11px] font-semibold text-emerald-700 truncate">
+                School Ready: Works Without Wi-Fi
               </span>
             </div>
             <button
               type="button"
               onClick={handleOpenServerModal}
-              className="inline-flex items-center space-x-1 font-semibold text-indigo-600 hover:text-indigo-800 cursor-pointer text-[11px]"
+              className="inline-flex items-center space-x-1 font-semibold text-slate-400 hover:text-indigo-600 cursor-pointer text-[11px]"
             >
               <Settings className="w-3.5 h-3.5" />
-              <span>Change</span>
+              <span>Server</span>
             </button>
           </div>
         </div>

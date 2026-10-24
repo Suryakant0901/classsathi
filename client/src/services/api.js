@@ -16,6 +16,486 @@ export const isNativePlatform = () => {
 
 export const isNativeApp = isNativePlatform();
 
+// Pre-seeded starter students for Class 9 and Class 10 (Offline / School Standalone Mode)
+const INITIAL_STUDENTS = [
+  // Class 9
+  { _id: 'st_9_1', rollNo: 1, name: 'Aarav Sharma', fatherName: 'Rajesh Sharma', studentClass: '9', phone: '9876543210', gender: 'Male', isActive: true },
+  { _id: 'st_9_2', rollNo: 2, name: 'Aditya Kumar', fatherName: 'Suresh Kumar', studentClass: '9', phone: '9876543211', gender: 'Male', isActive: true },
+  { _id: 'st_9_3', rollNo: 3, name: 'Ananya Verma', fatherName: 'Manoj Verma', studentClass: '9', phone: '9876543212', gender: 'Female', isActive: true },
+  { _id: 'st_9_4', rollNo: 4, name: 'Aryan Gupta', fatherName: 'Ramesh Gupta', studentClass: '9', phone: '9876543213', gender: 'Male', isActive: true },
+  { _id: 'st_9_5', rollNo: 5, name: 'Ayush Tiwari', fatherName: 'Vinod Tiwari', studentClass: '9', phone: '9876543214', gender: 'Male', isActive: true },
+  { _id: 'st_9_6', rollNo: 6, name: 'Divya Mishra', fatherName: 'Ashok Mishra', studentClass: '9', phone: '9876543215', gender: 'Female', isActive: true },
+  { _id: 'st_9_7', rollNo: 7, name: 'Khushi Singh', fatherName: 'Sanjay Singh', studentClass: '9', phone: '9876543216', gender: 'Female', isActive: true },
+  { _id: 'st_9_8', rollNo: 8, name: 'Priya Patel', fatherName: 'Dharmendra Patel', studentClass: '9', phone: '9876543217', gender: 'Female', isActive: true },
+  { _id: 'st_9_9', rollNo: 9, name: 'Rohan Yadav', fatherName: 'Dinesh Yadav', studentClass: '9', phone: '9876543218', gender: 'Male', isActive: true },
+  { _id: 'st_9_10', rollNo: 10, name: 'Shivam Pandey', fatherName: 'Sunil Pandey', studentClass: '9', phone: '9876543219', gender: 'Male', isActive: true },
+
+  // Class 10
+  { _id: 'st_10_1', rollNo: 1, name: 'Aman Shukla', fatherName: 'Alok Shukla', studentClass: '10', phone: '9876543220', gender: 'Male', isActive: true },
+  { _id: 'st_10_2', rollNo: 2, name: 'Ankit Dubey', fatherName: 'Pradeep Dubey', studentClass: '10', phone: '9876543221', gender: 'Male', isActive: true },
+  { _id: 'st_10_3', rollNo: 3, name: 'Deepika Maurya', fatherName: 'Ramakant Maurya', studentClass: '10', phone: '9876543222', gender: 'Female', isActive: true },
+  { _id: 'st_10_4', rollNo: 4, name: 'Harsh Srivastava', fatherName: 'Ajay Srivastava', studentClass: '10', phone: '9876543223', gender: 'Male', isActive: true },
+  { _id: 'st_10_5', rollNo: 5, name: 'Neha Chauhan', fatherName: 'Virendra Chauhan', studentClass: '10', phone: '9876543224', gender: 'Female', isActive: true },
+  { _id: 'st_10_6', rollNo: 6, name: 'Pooja Tripathi', fatherName: 'Anand Tripathi', studentClass: '10', phone: '9876543225', gender: 'Female', isActive: true },
+  { _id: 'st_10_7', rollNo: 7, name: 'Rahul Chauhan', fatherName: 'Santosh Chauhan', studentClass: '10', phone: '9876543226', gender: 'Male', isActive: true },
+  { _id: 'st_10_8', rollNo: 8, name: 'Ritu Sen', fatherName: 'Mahesh Sen', studentClass: '10', phone: '9876543227', gender: 'Female', isActive: true },
+  { _id: 'st_10_9', rollNo: 9, name: 'Sachin Dixit', fatherName: 'Kailash Dixit', studentClass: '10', phone: '9876543228', gender: 'Male', isActive: true },
+  { _id: 'st_10_10', rollNo: 10, name: 'Vikas Yadav', fatherName: 'Ravindra Yadav', studentClass: '10', phone: '9876543229', gender: 'Male', isActive: true }
+];
+
+const INITIAL_USER = {
+  _id: 'admin_local_master',
+  name: 'SURYAKANT CHATURVEDI',
+  email: 'admin@classsathi.com',
+  role: 'admin',
+  schoolName: 'ClassSathi Academy (Class 9 & 10)',
+  teacherTitle: 'Class Teacher'
+};
+
+// Local storage storage engine helpers
+const getLocalStudents = () => {
+  try {
+    const raw = localStorage.getItem('classsathi_students_db');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {}
+  localStorage.setItem('classsathi_students_db', JSON.stringify(INITIAL_STUDENTS));
+  return INITIAL_STUDENTS;
+};
+
+const saveLocalStudents = (list) => {
+  localStorage.setItem('classsathi_students_db', JSON.stringify(list));
+};
+
+const getLocalAttendances = () => {
+  try {
+    const raw = localStorage.getItem('classsathi_attendances_db');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch {}
+  return [];
+};
+
+const saveLocalAttendances = (list) => {
+  localStorage.setItem('classsathi_attendances_db', JSON.stringify(list));
+};
+
+const getLocalUser = () => {
+  try {
+    const raw = localStorage.getItem('classsathi_user_db');
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return INITIAL_USER;
+};
+
+const saveLocalUser = (user) => {
+  localStorage.setItem('classsathi_user_db', JSON.stringify(user));
+};
+
+// Embedded Standalone Engine
+const localEngine = {
+  login: (email, password) => {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanPassword = (password || '').trim();
+    const localUser = getLocalUser();
+    const savedPassword = localStorage.getItem('classsathi_password_db') || 'admin123';
+
+    if (cleanEmail === localUser.email.toLowerCase() && cleanPassword === savedPassword) {
+      const token = 'standalone_token_' + Date.now();
+      localStorage.setItem('classsathi_token', token);
+      localStorage.setItem('classsathi_user', JSON.stringify(localUser));
+      return { success: true, data: { ...localUser, token } };
+    }
+    throw new Error('Invalid email or password. Please try again.');
+  },
+
+  getMe: () => {
+    return { success: true, data: getLocalUser() };
+  },
+
+  updateProfile: (profileData) => {
+    const current = getLocalUser();
+    const updated = { ...current, ...profileData };
+    saveLocalUser(updated);
+    localStorage.setItem('classsathi_user', JSON.stringify(updated));
+    return { success: true, data: updated };
+  },
+
+  changePassword: (passwordData) => {
+    const saved = localStorage.getItem('classsathi_password_db') || 'admin123';
+    if (passwordData.currentPassword !== saved) {
+      throw new Error('Current password does not match.');
+    }
+    localStorage.setItem('classsathi_password_db', passwordData.newPassword);
+    return { success: true, message: 'Password updated successfully' };
+  },
+
+  getStudents: (params = {}) => {
+    let list = getLocalStudents();
+    if (params.studentClass && params.studentClass !== 'all') {
+      list = list.filter((s) => String(s.studentClass) === String(params.studentClass));
+    }
+    if (params.isActive !== undefined) {
+      list = list.filter((s) => String(s.isActive) === String(params.isActive));
+    }
+    if (params.search) {
+      const q = params.search.toLowerCase();
+      list = list.filter(
+        (s) =>
+          s.name.toLowerCase().includes(q) ||
+          s.fatherName?.toLowerCase().includes(q) ||
+          String(s.rollNo).includes(q)
+      );
+    }
+    list.sort((a, b) => Number(a.rollNo) - Number(b.rollNo));
+    return { success: true, count: list.length, data: list };
+  },
+
+  getStudentById: (id) => {
+    const list = getLocalStudents();
+    const found = list.find((s) => String(s._id) === String(id));
+    if (!found) throw new Error('Student not found');
+    return { success: true, data: found };
+  },
+
+  createStudent: (studentData) => {
+    const list = getLocalStudents();
+    const exists = list.some(
+      (s) =>
+        String(s.studentClass) === String(studentData.studentClass) &&
+        Number(s.rollNo) === Number(studentData.rollNo)
+    );
+    if (exists) {
+      throw new Error(`Roll No ${studentData.rollNo} already exists in Class ${studentData.studentClass}`);
+    }
+    const newStudent = {
+      ...studentData,
+      rollNo: Number(studentData.rollNo),
+      _id: 'st_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      isActive: true,
+      createdAt: new Date().toISOString()
+    };
+    list.push(newStudent);
+    saveLocalStudents(list);
+    return { success: true, data: newStudent };
+  },
+
+  bulkCreateStudents: (studentsArray) => {
+    const list = getLocalStudents();
+    const added = [];
+    studentsArray.forEach((st) => {
+      const exists = list.some(
+        (s) => String(s.studentClass) === String(st.studentClass) && Number(s.rollNo) === Number(st.rollNo)
+      );
+      if (!exists) {
+        const item = {
+          ...st,
+          rollNo: Number(st.rollNo),
+          _id: 'st_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+          isActive: true,
+          createdAt: new Date().toISOString()
+        };
+        list.push(item);
+        added.push(item);
+      }
+    });
+    saveLocalStudents(list);
+    return { success: true, count: added.length, data: added };
+  },
+
+  updateStudent: (id, studentData) => {
+    const list = getLocalStudents();
+    const idx = list.findIndex((s) => String(s._id) === String(id));
+    if (idx === -1) throw new Error('Student not found');
+    list[idx] = { ...list[idx], ...studentData, rollNo: Number(studentData.rollNo || list[idx].rollNo) };
+    saveLocalStudents(list);
+    return { success: true, data: list[idx] };
+  },
+
+  deleteStudent: (id) => {
+    let list = getLocalStudents();
+    list = list.filter((s) => String(s._id) !== String(id));
+    saveLocalStudents(list);
+    return { success: true, message: 'Student removed successfully' };
+  },
+
+  getClassesSummary: () => {
+    const list = getLocalStudents().filter((s) => s.isActive !== false);
+    const count9 = list.filter((s) => String(s.studentClass) === '9').length;
+    const count10 = list.filter((s) => String(s.studentClass) === '10').length;
+    return {
+      success: true,
+      data: [
+        { _id: '9', count: count9 },
+        { _id: '10', count: count10 }
+      ]
+    };
+  },
+
+  saveAttendance: (payload) => {
+    const { date, studentClass, records, reason } = payload;
+    let list = getLocalAttendances();
+
+    let present = 0, absent = 0, late = 0, leave = 0;
+    records.forEach((r) => {
+      if (r.status === 'Present') present++;
+      else if (r.status === 'Absent') absent++;
+      else if (r.status === 'Late') late++;
+      else if (r.status === 'Leave') leave++;
+    });
+
+    const total = records.length;
+    const effectivePresent = present + late;
+    const percentage = total > 0 ? Number(((effectivePresent / total) * 100).toFixed(1)) : 0;
+    const summary = { total, present, absent, late, leave, percentage };
+
+    const existingIndex = list.findIndex(
+      (a) => a.date === date && String(a.studentClass) === String(studentClass)
+    );
+
+    let savedDoc;
+    if (existingIndex > -1) {
+      const existing = list[existingIndex];
+      const auditEntry = {
+        timestamp: new Date().toISOString(),
+        changedBy: 'Administrator',
+        reason: reason || 'Attendance updated',
+        changes: []
+      };
+
+      savedDoc = {
+        ...existing,
+        records,
+        summary,
+        updatedAt: new Date().toISOString(),
+        auditTrail: [...(existing.auditTrail || []), auditEntry]
+      };
+      list[existingIndex] = savedDoc;
+    } else {
+      savedDoc = {
+        _id: 'att_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        date,
+        studentClass,
+        records,
+        summary,
+        createdAt: new Date().toISOString(),
+        auditTrail: [
+          {
+            timestamp: new Date().toISOString(),
+            changedBy: 'Administrator',
+            reason: reason || 'Initial daily attendance'
+          }
+        ]
+      };
+      list.push(savedDoc);
+    }
+
+    saveLocalAttendances(list);
+    return { success: true, message: 'Attendance recorded successfully', data: savedDoc };
+  },
+
+  getDailyAttendance: (date, studentClass) => {
+    const attendances = getLocalAttendances();
+    const doc = attendances.find(
+      (a) => a.date === date && String(a.studentClass) === String(studentClass)
+    );
+    const students = getLocalStudents().filter(
+      (s) => String(s.studentClass) === String(studentClass) && s.isActive !== false
+    );
+    students.sort((a, b) => Number(a.rollNo) - Number(b.rollNo));
+
+    return {
+      success: true,
+      isRecorded: Boolean(doc),
+      data: doc || null,
+      students
+    };
+  },
+
+  getMonthlyRegister: (year, month, studentClass) => {
+    const y = Number(year);
+    const m = Number(month);
+    const daysInMonth = new Date(y, m, 0).getDate();
+
+    const students = getLocalStudents().filter(
+      (s) => String(s.studentClass) === String(studentClass) && s.isActive !== false
+    );
+    students.sort((a, b) => Number(a.rollNo) - Number(b.rollNo));
+
+    const monthStr = m < 10 ? `0${m}` : `${m}`;
+    const prefix = `${y}-${monthStr}`;
+
+    const attendances = getLocalAttendances().filter(
+      (a) => String(a.studentClass) === String(studentClass) && a.date.startsWith(prefix)
+    );
+
+    const dateMap = new Map();
+    attendances.forEach((att) => {
+      const dayNum = parseInt(att.date.split('-')[2], 10);
+      const studentStatusMap = new Map();
+      att.records.forEach((r) => {
+        studentStatusMap.set(String(r.student || r.rollNo), r);
+      });
+      dateMap.set(dayNum, studentStatusMap);
+    });
+
+    const studentRows = students.map((st) => {
+      const dailyStatus = {};
+      let present = 0, absent = 0, late = 0, leave = 0;
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dayAttendance = dateMap.get(d);
+        if (dayAttendance) {
+          const rec = dayAttendance.get(String(st._id)) || dayAttendance.get(String(st.rollNo));
+          if (rec) {
+            dailyStatus[d] = { status: rec.status, remarks: rec.remarks || '' };
+            if (rec.status === 'Present') present++;
+            else if (rec.status === 'Absent') absent++;
+            else if (rec.status === 'Late') late++;
+            else if (rec.status === 'Leave') leave++;
+          } else {
+            dailyStatus[d] = null;
+          }
+        } else {
+          dailyStatus[d] = null;
+        }
+      }
+
+      const totalRecorded = present + absent + late + leave;
+      const effectivePresent = present + late;
+      const percentage = totalRecorded > 0 ? Number(((effectivePresent / totalRecorded) * 100).toFixed(1)) : 0;
+
+      return {
+        studentId: st._id,
+        rollNo: st.rollNo,
+        name: st.name,
+        fatherName: st.fatherName,
+        dailyStatus,
+        summary: { present, absent, late, leave, totalRecorded, percentage }
+      };
+    });
+
+    return {
+      success: true,
+      data: {
+        year: y,
+        month: m,
+        studentClass,
+        daysInMonth,
+        totalStudents: students.length,
+        studentRows
+      }
+    };
+  },
+
+  getStudentHistory: (studentId) => {
+    const students = getLocalStudents();
+    const st = students.find((s) => String(s._id) === String(studentId));
+    if (!st) throw new Error('Student not found');
+
+    const attendances = getLocalAttendances().filter((a) => String(a.studentClass) === String(st.studentClass));
+    attendances.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    let present = 0, absent = 0, late = 0, leave = 0;
+    const history = [];
+
+    attendances.forEach((att) => {
+      const rec = att.records.find((r) => String(r.student || r.rollNo) === String(st._id) || String(r.rollNo) === String(st.rollNo));
+      if (rec) {
+        history.push({ date: att.date, status: rec.status, remarks: rec.remarks || '' });
+        if (rec.status === 'Present') present++;
+        else if (rec.status === 'Absent') absent++;
+        else if (rec.status === 'Late') late++;
+        else if (rec.status === 'Leave') leave++;
+      }
+    });
+
+    const totalDays = history.length;
+    const effectivePresent = present + late;
+    const percentage = totalDays > 0 ? Number(((effectivePresent / totalDays) * 100).toFixed(1)) : 0;
+
+    return {
+      success: true,
+      data: {
+        student: st,
+        summary: { totalDays, present, absent, late, leave, percentage },
+        history
+      }
+    };
+  },
+
+  getAudit: (id) => {
+    const list = getLocalAttendances();
+    const found = list.find((a) => String(a._id) === String(id));
+    return { success: true, data: found?.auditTrail || [] };
+  },
+
+  deleteAttendance: (id) => {
+    let list = getLocalAttendances();
+    list = list.filter((a) => String(a._id) !== String(id));
+    saveLocalAttendances(list);
+    return { success: true, message: 'Attendance record deleted successfully' };
+  },
+
+  getDashboardStats: (dateParam) => {
+    const today = dateParam || new Date().toISOString().split('T')[0];
+    const students = getLocalStudents().filter((s) => s.isActive !== false);
+    const attendances = getLocalAttendances();
+
+    const todayAtts = attendances.filter((a) => a.date === today);
+
+    let presentToday = 0, absentToday = 0, lateToday = 0, leaveToday = 0;
+    todayAtts.forEach((att) => {
+      if (att.summary) {
+        presentToday += att.summary.present || 0;
+        absentToday += att.summary.absent || 0;
+        lateToday += att.summary.late || 0;
+        leaveToday += att.summary.leave || 0;
+      }
+    });
+
+    const totalStudents = students.length;
+    const totalMarked = presentToday + absentToday + lateToday + leaveToday;
+    const effectivePresent = presentToday + lateToday;
+    const overallRate = totalMarked > 0 ? Number(((effectivePresent / totalMarked) * 100).toFixed(1)) : 0;
+
+    return {
+      success: true,
+      data: {
+        date: today,
+        totalStudents,
+        class9Count: students.filter((s) => String(s.studentClass) === '9').length,
+        class10Count: students.filter((s) => String(s.studentClass) === '10').length,
+        todayAttendance: {
+          present: presentToday,
+          absent: absentToday,
+          late: lateToday,
+          leave: leaveToday,
+          percentage: overallRate
+        },
+        classStats: [
+          {
+            class: '9',
+            total: students.filter((s) => String(s.studentClass) === '9').length,
+            recorded: todayAtts.some((a) => String(a.studentClass) === '9'),
+            percentage: todayAtts.find((a) => String(a.studentClass) === '9')?.summary?.percentage || 0
+          },
+          {
+            class: '10',
+            total: students.filter((s) => String(s.studentClass) === '10').length,
+            recorded: todayAtts.some((a) => String(a.studentClass) === '10'),
+            percentage: todayAtts.find((a) => String(a.studentClass) === '10')?.summary?.percentage || 0
+          }
+        ]
+      }
+    };
+  }
+};
+
 export const getApiBaseUrl = () => {
   if (typeof window !== 'undefined') {
     const saved = localStorage.getItem('classsathi_api_url');
@@ -29,7 +509,6 @@ export const getApiBaseUrl = () => {
   }
 
   if (isNativePlatform()) {
-    // Default mobile app to the local Wi-Fi PC server running backend
     return DEFAULT_LOCAL_API_URL;
   }
 
@@ -76,13 +555,13 @@ export const testApiConnection = async (customUrl) => {
       success: false,
       error:
         err.name === 'AbortError'
-          ? 'Connection timed out (4s). Ensure server is running and device is on same network.'
+          ? 'Connection timed out (4s)'
           : err.message || 'Server unreachable'
     };
   }
 };
 
-// Helper for making API calls with token
+// Dispatch router between Remote Backend and Local Standalone Engine
 async function request(endpoint, options = {}) {
   const token = localStorage.getItem('classsathi_token');
   const headers = {
@@ -98,8 +577,17 @@ async function request(endpoint, options = {}) {
 
   const baseUrl = getApiBaseUrl();
 
+  // Try network fetch first
   try {
-    const response = await fetch(`${baseUrl}${endpoint}`, config);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+    const response = await fetch(`${baseUrl}${endpoint}`, {
+      ...config,
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
     const contentType = response.headers.get('content-type') || '';
     let data;
 
@@ -113,7 +601,7 @@ async function request(endpoint, options = {}) {
         data = {
           message:
             text.includes('<html') || text.includes('NOT_FOUND')
-              ? `Backend service temporarily unavailable (${response.status}). Please check network/server settings.`
+              ? `Backend service unavailable (${response.status})`
               : text || `Server error (${response.status})`
         };
       }
@@ -121,7 +609,6 @@ async function request(endpoint, options = {}) {
 
     if (!response.ok) {
       if (response.status === 401 && !endpoint.includes('/auth/login')) {
-        // Token expired or invalid
         localStorage.removeItem('classsathi_token');
         localStorage.removeItem('classsathi_user');
         window.location.reload();
@@ -130,20 +617,99 @@ async function request(endpoint, options = {}) {
     }
 
     return data;
-  } catch (error) {
-    console.error(`API Error on [${options.method || 'GET'} ${endpoint}]:`, error);
-    if (
-      error.name === 'TypeError' &&
-      (error.message.includes('fetch') ||
-        error.message.includes('Failed to fetch') ||
-        error.message.includes('NetworkError') ||
-        error.message.includes('Network request failed'))
-    ) {
-      throw new Error(
-        `Failed to reach backend server (${baseUrl}). Please ensure your PC server is running and phone is on the same Wi-Fi / hotspot, or configure the Server Connection in settings below.`
-      );
+  } catch (networkError) {
+    // If backend is unreachable (e.g. Papa is at school without Wi-Fi),
+    // automatically activate Standalone Device Engine!
+    console.warn(`[ClassSathi Engine] Backend offline (${baseUrl}). Running standalone on device for ${endpoint}`);
+
+    // Auth endpoints
+    if (endpoint === '/auth/login') {
+      const body = JSON.parse(options.body || '{}');
+      return localEngine.login(body.email, body.password);
     }
-    throw error;
+    if (endpoint === '/auth/me') {
+      return localEngine.getMe();
+    }
+    if (endpoint === '/auth/profile') {
+      const body = JSON.parse(options.body || '{}');
+      return localEngine.updateProfile(body);
+    }
+    if (endpoint === '/auth/change-password') {
+      const body = JSON.parse(options.body || '{}');
+      return localEngine.changePassword(body);
+    }
+
+    // Student endpoints
+    if (endpoint.startsWith('/students/classes-summary')) {
+      return localEngine.getClassesSummary();
+    }
+    if (endpoint === '/students/bulk') {
+      const body = JSON.parse(options.body || '{}');
+      return localEngine.bulkCreateStudents(body.students || []);
+    }
+    if (endpoint.startsWith('/students') && (options.method === 'GET' || !options.method)) {
+      const url = new URL('http://dummy.local' + endpoint);
+      const params = Object.fromEntries(url.searchParams.entries());
+      return localEngine.getStudents(params);
+    }
+    if (endpoint === '/students' && options.method === 'POST') {
+      const body = JSON.parse(options.body || '{}');
+      return localEngine.createStudent(body);
+    }
+    if (endpoint.startsWith('/students/') && options.method === 'PUT') {
+      const id = endpoint.split('/students/')[1];
+      const body = JSON.parse(options.body || '{}');
+      return localEngine.updateStudent(id, body);
+    }
+    if (endpoint.startsWith('/students/') && options.method === 'DELETE') {
+      const id = endpoint.split('/students/')[1];
+      return localEngine.deleteStudent(id);
+    }
+    if (endpoint.startsWith('/students/') && (options.method === 'GET' || !options.method)) {
+      const id = endpoint.split('/students/')[1];
+      return localEngine.getStudentById(id);
+    }
+
+    // Attendance endpoints
+    if (endpoint === '/attendance' && options.method === 'POST') {
+      const body = JSON.parse(options.body || '{}');
+      return localEngine.saveAttendance(body);
+    }
+    if (endpoint.startsWith('/attendance/daily')) {
+      const url = new URL('http://dummy.local' + endpoint);
+      const date = url.searchParams.get('date');
+      const studentClass = url.searchParams.get('studentClass');
+      return localEngine.getDailyAttendance(date, studentClass);
+    }
+    if (endpoint.startsWith('/attendance/monthly')) {
+      const url = new URL('http://dummy.local' + endpoint);
+      const year = url.searchParams.get('year');
+      const month = url.searchParams.get('month');
+      const studentClass = url.searchParams.get('studentClass');
+      return localEngine.getMonthlyRegister(year, month, studentClass);
+    }
+    if (endpoint.startsWith('/attendance/student/')) {
+      const studentId = endpoint.split('/attendance/student/')[1];
+      return localEngine.getStudentHistory(studentId);
+    }
+    if (endpoint.startsWith('/attendance/audit/')) {
+      const id = endpoint.split('/attendance/audit/')[1];
+      return localEngine.getAudit(id);
+    }
+    if (endpoint.startsWith('/attendance/') && options.method === 'DELETE') {
+      const id = endpoint.split('/attendance/')[1];
+      return localEngine.deleteAttendance(id);
+    }
+
+    // Dashboard endpoint
+    if (endpoint.startsWith('/dashboard/stats')) {
+      const url = new URL('http://dummy.local' + endpoint);
+      const date = url.searchParams.get('date');
+      return localEngine.getDashboardStats(date);
+    }
+
+    // Fallback if no matching local route
+    throw networkError;
   }
 }
 
