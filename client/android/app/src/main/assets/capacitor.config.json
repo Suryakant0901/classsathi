@@ -1,5 +1,5 @@
 {
-  "appId": "com.classsathi.app",
-  "appName": "ClassSathi",
-  "webDir": "dist"
+	"appId": "com.classsathi.app",
+	"appName": "ClassSathi",
+	"webDir": "dist"
 }

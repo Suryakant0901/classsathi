@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { attendanceAPI } from '../services/api';
+import { attendanceAPI, getLocalDateString } from '../services/api';
 import {
   generateDailyPDF,
   generateDailyExcel,
@@ -24,7 +24,7 @@ const Reports = () => {
 
   // Daily Report State (Class 9 or 10)
   const [dailyClass, setDailyClass] = useState('9');
-  const [dailyDate, setDailyDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [dailyDate, setDailyDate] = useState(() => getLocalDateString());
   const [dailyLoading, setDailyLoading] = useState(false);
   const [dailyMessage, setDailyMessage] = useState(null);
 

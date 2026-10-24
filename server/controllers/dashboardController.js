@@ -137,6 +137,33 @@ const getDashboardStats = async (req, res) => {
     // Sort lowest percentage first
     lowAttendanceList.sort((a, b) => a.percentage - b.percentage);
 
+    // Class 9 & Class 10 specific breakdown
+    const class9Att = todayAttendances.find((a) => String(a.studentClass) === '9');
+    const class10Att = todayAttendances.find((a) => String(a.studentClass) === '10');
+
+    const classStats = {
+      class9: {
+        studentClass: '9',
+        total: class9Total,
+        isRecorded: Boolean(class9Att),
+        present: class9Att?.summary?.present || 0,
+        absent: class9Att?.summary?.absent || 0,
+        late: class9Att?.summary?.late || 0,
+        leave: class9Att?.summary?.leave || 0,
+        percentage: class9Att?.summary?.percentage || 0
+      },
+      class10: {
+        studentClass: '10',
+        total: class10Total,
+        isRecorded: Boolean(class10Att),
+        present: class10Att?.summary?.present || 0,
+        absent: class10Att?.summary?.absent || 0,
+        late: class10Att?.summary?.late || 0,
+        leave: class10Att?.summary?.leave || 0,
+        percentage: class10Att?.summary?.percentage || 0
+      }
+    };
+
     res.json({
       success: true,
       data: {
@@ -147,6 +174,8 @@ const getDashboardStats = async (req, res) => {
           class10: class10Total
         },
         todayStats,
+        classStats,
+        classStatsList: [classStats.class9, classStats.class10],
         monthStats,
         recentSessions,
         lowAttendanceAlerts: lowAttendanceList.slice(0, 10)

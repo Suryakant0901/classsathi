@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { attendanceAPI, studentsAPI } from '../services/api';
+import { attendanceAPI, studentsAPI, getLocalDateString } from '../services/api';
 import {
   generateDailyPDF,
   generateDailyExcel,
@@ -45,7 +45,7 @@ const AttendanceRegister = ({ setActivePage }) => {
   const [monthlyData, setMonthlyData] = useState(null);
 
   // Daily State
-  const [selectedDailyDate, setSelectedDailyDate] = useState(() => currentDate.toISOString().split('T')[0]);
+  const [selectedDailyDate, setSelectedDailyDate] = useState(() => getLocalDateString());
   const [dailyData, setDailyData] = useState(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deletingAttendance, setDeletingAttendance] = useState(false);

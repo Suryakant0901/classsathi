@@ -1,10 +1,94 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
+
+// Converts a Blob to Base64 string
+const blobToBase64 = (blob) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      const base64 = dataUrl.split(',')[1];
+      resolve(base64);
+    };
+    reader.readAsDataURL(blob);
+  });
+};
+
+/**
+ * Universal Native & Web File Saver/Sharer
+ * On Android/iOS APK: Writes file to device Cache/Documents and opens native Share/Save dialog.
+ * On Web: Falls back to Web Share API or direct browser download.
+ */
+export const saveOrShareFile = async (blob, filename, mimeType) => {
+  // 1. Native Capacitor (Android APK)
+  if (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform && Capacitor.isNativePlatform()) {
+    try {
+      const base64Data = await blobToBase64(blob);
+      const writeResult = await Filesystem.writeFile({
+        path: filename,
+        data: base64Data,
+        directory: Directory.Cache
+      });
+
+      await Share.share({
+        title: filename,
+        text: `ClassSathi Attendance: ${filename}`,
+        url: writeResult.uri,
+        dialogTitle: `Save or Share ${filename}`
+      });
+      return true;
+    } catch (nativeErr) {
+      console.warn('Native Capacitor share failed, falling back to browser methods:', nativeErr);
+    }
+  }
+
+  // 2. Web Share API (if supported with files in browser)
+  try {
+    if (typeof navigator !== 'undefined' && navigator.share && navigator.canShare) {
+      const file = new File([blob], filename, { type: mimeType });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: filename,
+          text: `ClassSathi Attendance: ${filename}`
+        });
+        return true;
+      }
+    }
+  } catch (shareErr) {
+    if (shareErr.name === 'AbortError') return true;
+    console.warn('Web Share failed, attempting direct download...', shareErr);
+  }
+
+  // 3. Standard Browser Download Anchor
+  try {
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = filename;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+    }, 2000);
+    return true;
+  } catch (err) {
+    console.error('All download mechanisms failed:', err);
+    alert('File download failed. Please check storage/browser permissions.');
+    return false;
+  }
+};
 
 // --- DAILY EXPORTS ---
 
-export const generateDailyPDF = (dailyData, schoolInfo = {}) => {
+export const generateDailyPDF = async (dailyData, schoolInfo = {}) => {
   if (!dailyData || !dailyData.records || dailyData.records.length === 0) {
     alert('No attendance records available to export for this date.');
     return;
@@ -132,10 +216,12 @@ export const generateDailyPDF = (dailyData, schoolInfo = {}) => {
     align: 'center'
   });
 
-  doc.save(`Daily_Attendance_Class_${dailyData.studentClass}_${dailyData.date}.pdf`);
+  const filename = `Daily_Attendance_Class_${dailyData.studentClass}_${dailyData.date}.pdf`;
+  const blob = doc.output('blob');
+  return saveOrShareFile(blob, filename, 'application/pdf');
 };
 
-export const generateDailyExcel = (dailyData, schoolInfo = {}) => {
+export const generateDailyExcel = async (dailyData, schoolInfo = {}) => {
   if (!dailyData || !dailyData.records || dailyData.records.length === 0) {
     alert('No attendance records available to export for this date.');
     return;
@@ -181,15 +267,19 @@ export const generateDailyExcel = (dailyData, schoolInfo = {}) => {
 
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Daily Attendance');
-  XLSX.writeFile(
-    workbook,
-    `Daily_Attendance_Class_${dailyData.studentClass}_${dailyData.date}.xlsx`
-  );
+  
+  const filename = `Daily_Attendance_Class_${dailyData.studentClass}_${dailyData.date}.xlsx`;
+  const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([wbout], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  });
+
+  return saveOrShareFile(blob, filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 };
 
 // --- MONTHLY MATRIX EXPORTS ---
 
-export const generateMonthlyPDF = (monthlyData, schoolInfo = {}) => {
+export const generateMonthlyPDF = async (monthlyData, schoolInfo = {}) => {
   if (!monthlyData || !monthlyData.studentRows || monthlyData.studentRows.length === 0) {
     alert('No monthly register records available to export.');
     return;
@@ -311,12 +401,12 @@ export const generateMonthlyPDF = (monthlyData, schoolInfo = {}) => {
   doc.text('Principal / Headmaster Signature & Stamp', 220, signY);
   doc.line(216, signY - 4, 275, signY - 4);
 
-  doc.save(
-    `Monthly_Register_Class_${monthlyData.studentClass}_${monthlyData.year}_${monthlyData.month}.pdf`
-  );
+  const filename = `Monthly_Register_Class_${monthlyData.studentClass}_${monthlyData.year}_${monthlyData.month}.pdf`;
+  const blob = doc.output('blob');
+  return saveOrShareFile(blob, filename, 'application/pdf');
 };
 
-export const generateMonthlyExcel = (monthlyData, schoolInfo = {}) => {
+export const generateMonthlyExcel = async (monthlyData, schoolInfo = {}) => {
   if (!monthlyData || !monthlyData.studentRows || monthlyData.studentRows.length === 0) {
     alert('No monthly register records available to export.');
     return;
@@ -371,8 +461,12 @@ export const generateMonthlyExcel = (monthlyData, schoolInfo = {}) => {
 
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Monthly Register');
-  XLSX.writeFile(
-    workbook,
-    `Monthly_Register_Class_${monthlyData.studentClass}_${monthlyData.year}_${monthlyData.month}.xlsx`
-  );
+
+  const filename = `Monthly_Register_Class_${monthlyData.studentClass}_${monthlyData.year}_${monthlyData.month}.xlsx`;
+  const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([wbout], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  });
+
+  return saveOrShareFile(blob, filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 };

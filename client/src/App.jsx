@@ -49,7 +49,7 @@ function AppContent() {
         />
 
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
-          {activePage === 'dashboard' && <Dashboard setActivePage={setActivePage} />}
+          {activePage === 'dashboard' && <Dashboard setActivePage={setActivePage} activePage={activePage} />}
           {activePage === 'take-attendance' && <TakeAttendance setActivePage={setActivePage} />}
           {activePage === 'register' && <AttendanceRegister setActivePage={setActivePage} />}
           {activePage === 'students' && <Students setActivePage={setActivePage} />}

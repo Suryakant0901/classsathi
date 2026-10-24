@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { attendanceAPI, studentsAPI } from '../services/api';
+import { attendanceAPI, studentsAPI, getLocalDateString } from '../services/api';
 import { generateDailyPDF, generateDailyExcel } from '../utils/exportHelpers';
 import { useAuth } from '../context/AuthContext';
 import confetti from 'canvas-confetti';
@@ -26,8 +26,20 @@ const TakeAttendance = ({ setActivePage }) => {
   const { user } = useAuth();
 
   // State
-  const [selectedClass, setSelectedClass] = useState('9');
-  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [selectedClass, setSelectedClass] = useState(() => {
+    try {
+      return localStorage.getItem('classsathi_selected_class') || '9';
+    } catch {
+      return '9';
+    }
+  });
+  const [selectedDate, setSelectedDate] = useState(() => getLocalDateString());
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('classsathi_selected_class', selectedClass);
+    } catch {}
+  }, [selectedClass]);
 
   const [students, setStudents] = useState([]);
   const [attendanceRecords, setAttendanceRecords] = useState([]);

@@ -16,6 +16,14 @@ export const isNativePlatform = () => {
 
 export const isNativeApp = isNativePlatform();
 
+export const getLocalDateString = (d = new Date()) => {
+  const date = new Date(d);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 // Pre-seeded starter students for Class 9 and Class 10 (Offline / School Standalone Mode)
 const INITIAL_STUDENTS = [
   // Class 9
@@ -442,55 +450,157 @@ const localEngine = {
   },
 
   getDashboardStats: (dateParam) => {
-    const today = dateParam || new Date().toISOString().split('T')[0];
+    const today = dateParam || getLocalDateString();
     const students = getLocalStudents().filter((s) => s.isActive !== false);
     const attendances = getLocalAttendances();
 
     const todayAtts = attendances.filter((a) => a.date === today);
 
-    let presentToday = 0, absentToday = 0, lateToday = 0, leaveToday = 0;
-    todayAtts.forEach((att) => {
-      if (att.summary) {
-        presentToday += att.summary.present || 0;
-        absentToday += att.summary.absent || 0;
-        lateToday += att.summary.late || 0;
-        leaveToday += att.summary.leave || 0;
-      }
-    });
+    const class9Students = students.filter((s) => String(s.studentClass) === '9');
+    const class10Students = students.filter((s) => String(s.studentClass) === '10');
 
-    const totalStudents = students.length;
+    const class9Att = todayAtts.find((a) => String(a.studentClass) === '9');
+    const class10Att = todayAtts.find((a) => String(a.studentClass) === '10');
+
+    const class9Stats = {
+      studentClass: '9',
+      total: class9Students.length,
+      isRecorded: Boolean(class9Att),
+      present: class9Att?.summary?.present || 0,
+      absent: class9Att?.summary?.absent || 0,
+      late: class9Att?.summary?.late || 0,
+      leave: class9Att?.summary?.leave || 0,
+      percentage: class9Att?.summary?.percentage || 0
+    };
+
+    const class10Stats = {
+      studentClass: '10',
+      total: class10Students.length,
+      isRecorded: Boolean(class10Att),
+      present: class10Att?.summary?.present || 0,
+      absent: class10Att?.summary?.absent || 0,
+      late: class10Att?.summary?.late || 0,
+      leave: class10Att?.summary?.leave || 0,
+      percentage: class10Att?.summary?.percentage || 0
+    };
+
+    const presentToday = class9Stats.present + class10Stats.present;
+    const absentToday = class9Stats.absent + class10Stats.absent;
+    const lateToday = class9Stats.late + class10Stats.late;
+    const leaveToday = class9Stats.leave + class10Stats.leave;
     const totalMarked = presentToday + absentToday + lateToday + leaveToday;
     const effectivePresent = presentToday + lateToday;
     const overallRate = totalMarked > 0 ? Number(((effectivePresent / totalMarked) * 100).toFixed(1)) : 0;
+
+    const todayStats = {
+      isRecorded: todayAtts.length > 0,
+      totalMarked,
+      present: presentToday,
+      absent: absentToday,
+      late: lateToday,
+      leave: leaveToday,
+      percentage: overallRate,
+      sessions: todayAtts.map((att) => ({
+        _id: att._id,
+        date: att.date,
+        studentClass: att.studentClass,
+        summary: att.summary
+      }))
+    };
+
+    // Recent sessions (most recent first)
+    const recentSessions = [...attendances]
+      .sort((a, b) => (b.date > a.date ? 1 : b.date < a.date ? -1 : 0))
+      .slice(0, 6)
+      .map((att) => ({
+        _id: att._id,
+        date: att.date,
+        studentClass: att.studentClass,
+        summary: att.summary
+      }));
+
+    // Current month statistics
+    const currentMonthPrefix = today.substring(0, 7);
+    const monthAtts = attendances.filter((a) => a.date && a.date.startsWith(currentMonthPrefix));
+    const totalWorkingDays = new Set(monthAtts.map((a) => a.date)).size;
+    const monthAvgPct = monthAtts.length > 0
+      ? Number((monthAtts.reduce((acc, curr) => acc + (curr.summary?.percentage || 0), 0) / monthAtts.length).toFixed(1))
+      : 0;
+
+    const monthStats = {
+      totalWorkingDays,
+      totalSessions: monthAtts.length,
+      averagePercentage: monthAvgPct
+    };
+
+    // Low attendance alerts (< 75%)
+    const studentHistoryMap = new Map();
+    attendances.forEach((att) => {
+      (att.records || []).forEach((r) => {
+        const id = String(r.student || r.rollNo);
+        if (!studentHistoryMap.has(id)) {
+          studentHistoryMap.set(id, {
+            studentId: r.student || id,
+            rollNo: r.rollNo,
+            name: r.name,
+            fatherName: r.fatherName,
+            studentClass: att.studentClass,
+            totalDays: 0,
+            presentDays: 0,
+            absentDays: 0,
+            lateDays: 0
+          });
+        }
+        const stRec = studentHistoryMap.get(id);
+        stRec.totalDays++;
+        if (r.status === 'Present') stRec.presentDays++;
+        else if (r.status === 'Absent') stRec.absentDays++;
+        else if (r.status === 'Late') stRec.lateDays++;
+      });
+    });
+
+    const lowAttendanceAlerts = [];
+    studentHistoryMap.forEach((rec) => {
+      if (rec.totalDays >= 2) {
+        const pct = Number((((rec.presentDays + rec.lateDays) / rec.totalDays) * 100).toFixed(1));
+        if (pct < 75) {
+          lowAttendanceAlerts.push({
+            ...rec,
+            percentage: pct
+          });
+        }
+      }
+    });
+    lowAttendanceAlerts.sort((a, b) => a.percentage - b.percentage);
 
     return {
       success: true,
       data: {
         date: today,
-        totalStudents,
-        class9Count: students.filter((s) => String(s.studentClass) === '9').length,
-        class10Count: students.filter((s) => String(s.studentClass) === '10').length,
+        students: {
+          total: students.length,
+          class9: class9Students.length,
+          class10: class10Students.length
+        },
+        todayStats,
+        classStats: {
+          class9: class9Stats,
+          class10: class10Stats
+        },
+        classStatsList: [class9Stats, class10Stats],
+        monthStats,
+        recentSessions,
+        lowAttendanceAlerts: lowAttendanceAlerts.slice(0, 10),
+        totalStudents: students.length,
+        class9Count: class9Students.length,
+        class10Count: class10Students.length,
         todayAttendance: {
           present: presentToday,
           absent: absentToday,
           late: lateToday,
           leave: leaveToday,
           percentage: overallRate
-        },
-        classStats: [
-          {
-            class: '9',
-            total: students.filter((s) => String(s.studentClass) === '9').length,
-            recorded: todayAtts.some((a) => String(a.studentClass) === '9'),
-            percentage: todayAtts.find((a) => String(a.studentClass) === '9')?.summary?.percentage || 0
-          },
-          {
-            class: '10',
-            total: students.filter((s) => String(s.studentClass) === '10').length,
-            recorded: todayAtts.some((a) => String(a.studentClass) === '10'),
-            percentage: todayAtts.find((a) => String(a.studentClass) === '10')?.summary?.percentage || 0
-          }
-        ]
+        }
       }
     };
   }

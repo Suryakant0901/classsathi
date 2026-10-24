@@ -32,9 +32,8 @@ jobs:
           cd client
           npm install
           npm run build
-          mkdir -p android/app/src/main/assets/public
-          cp -r dist/* android/app/src/main/assets/public/
-          cp capacitor.config.json android/app/src/main/assets/capacitor.config.json
+          npx cap update android
+          npx cap copy android
 
       - name: Setup Android SDK Platform 36 & Accept Licenses
         env:
@@ -73,9 +72,9 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.2
-          name: "ClassSathi v1.0.2 APK (School Standalone - Works Without Wi-Fi)"
-          body: "ClassSathi Android APK v1.0.2 with complete autonomous School Standalone engine. Works anywhere at school without home Wi-Fi or laptop, with full attendance taking, deleting, and offline reports."
+          tag_name: v1.0.3
+          name: "ClassSathi v1.0.3 APK (Live Class 9 & 10 Dashboard Breakdown + Native File Download)"
+          body: "ClassSathi Android APK v1.0.3:\n- Immediate dashboard live refresh when attendance is recorded or updated.\n- Live separate breakdown of Present & Absent counts for both Class 9 and Class 10 on the Dashboard.\n- Native Android PDF & Excel download and share support via Capacitor Filesystem and Share plugins.\n- Complete standalone autonomous school operation without Wi-Fi."
           files: ClassSathi-v1.0.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
