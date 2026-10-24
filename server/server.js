@@ -32,20 +32,46 @@ app.use(
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Ensure MongoDB connection and admin exist for serverless requests
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    await ensureAdminExists();
+    next();
+  } catch (err) {
+    console.error('DB middleware error:', err);
+    next();
+  }
+});
+
 // Health check endpoint
-app.get('/api/health', (req, res) => {
+const healthHandler = (req, res) => {
   res.json({
     status: 'online',
     appName: 'ClassSathi Attendance System',
     timestamp: new Date().toISOString()
   });
-});
+};
+app.get('/api/health', healthHandler);
+app.get('/health', healthHandler);
 
-// API Routes
-app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/students', require('./routes/studentRoutes'));
-app.use('/api/attendance', require('./routes/attendanceRoutes'));
-app.use('/api/dashboard', require('./routes/dashboardRoutes'));
+// API Routes - mounted on both /api/* and /* to handle any serverless rewrite
+const authRoutes = require('./routes/authRoutes');
+const studentRoutes = require('./routes/studentRoutes');
+const attendanceRoutes = require('./routes/attendanceRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
+
+app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes);
+
+app.use('/api/students', studentRoutes);
+app.use('/students', studentRoutes);
+
+app.use('/api/attendance', attendanceRoutes);
+app.use('/attendance', attendanceRoutes);
+
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/dashboard', dashboardRoutes);
 
 // 404 handler for unmatched API routes
 app.use('/api/*', (req, res) => {

@@ -1,8 +1,23 @@
-// In production (Vercel), uses VITE_API_URL env variable pointing to the deployed backend.
-// In local dev, uses Vite proxy so '/api' works directly.
+// Determine backend API URL:
+// 1. If VITE_API_URL is explicitly set, use it.
+// 2. If running inside native mobile app (Capacitor / Android WebView / file: / localhost without port),
+//    use the deployed cloud backend URL: 'https://classsathi-eight.vercel.app/api'.
+// 3. Otherwise (local browser development with Vite dev server), use relative '/api' proxy.
+const isNativeApp =
+  typeof window !== 'undefined' &&
+  (window.Capacitor?.isNativePlatform?.() ||
+    window.location.protocol === 'capacitor:' ||
+    window.location.protocol === 'file:' ||
+    (window.location.hostname === 'localhost' && window.location.port === '') ||
+    (window.location.hostname === '127.0.0.1' && window.location.port === ''));
+
+const CLOUD_API_URL = 'https://classsathi-eight.vercel.app/api';
+
 const API_BASE = import.meta.env.VITE_API_URL
   ? `${import.meta.env.VITE_API_URL}/api`
-  : '/api';
+  : isNativeApp
+    ? CLOUD_API_URL
+    : '/api';
 
 // Helper for making API calls with token
 async function request(endpoint, options = {}) {
@@ -20,7 +35,24 @@ async function request(endpoint, options = {}) {
 
   try {
     const response = await fetch(`${API_BASE}${endpoint}`, config);
-    const data = await response.json();
+    const contentType = response.headers.get('content-type') || '';
+    let data;
+
+    if (contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = {
+          message:
+            text.includes('<html') || text.includes('NOT_FOUND')
+              ? `Backend service temporarily unavailable (${response.status}). Please check network/server.`
+              : text || `Server error (${response.status})`
+        };
+      }
+    }
 
     if (!response.ok) {
       if (response.status === 401 && !endpoint.includes('/auth/login')) {

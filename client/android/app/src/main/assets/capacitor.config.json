@@ -1,9 +1,5 @@
 {
   "appId": "com.classsathi.app",
   "appName": "ClassSathi",
-  "webDir": "dist",
-  "server": {
-    "url": "https://classsathi-eight.vercel.app",
-    "cleartext": true
-  }
+  "webDir": "dist"
 }
