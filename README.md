@@ -10,8 +10,8 @@ A professional, full-stack **MERN (MongoDB, Express.js, React.js, Node.js)** att
    - Only the administrator (your father) can manage students and mark attendance.
    - Protected by JWT authentication and bcrypt password hashing.
    - Default Administrator Credentials:
-     - **Email:** `admin@classsathi.com`
-     - **Password:** `admin123`
+     - **Email:** `************`
+     - **Password:** `**********`
      *(Credentials can be changed anytime in the Settings & Profile page)*
 
 2. **Add Students Manually (Zero Pre-Populated Records)**:
@@ -114,6 +114,6 @@ class sathi/
 
 | Field | Default Value |
 | :--- | :--- |
-| **Email** | `admin@classsathi.com` |
-| **Password** | `admin123` |
+| **Email** | `***********` |
+| **Password** | `*********` |
 | **Access** | Administrator (Headmaster / Class Teacher) |
